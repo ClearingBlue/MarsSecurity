@@ -7,25 +7,26 @@ import requests
 import gradio as gr
 
 # Function to fetch Mars Rover photos
-def fetch_mars_rover_photos(api_key, sol=1000, page=1):
-    base_url = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos"
+def fetch_mars_rover_photos(api_key, sol=1000, page=1, camera = None):
+    base_url = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos" #访问的网站API：Mars Rover Photos
     
     params = {
         'api_key': api_key,
         'sol': sol,
-        'page': page
+        'page': page,
+        'camera': camera
     }
     print(params)
     
-    response = requests.get(base_url, params=params)
+    response = requests.get(base_url, params=params) # 向API发送请求和参数
     
-    if response.status_code == 200:
+    if response.status_code == 200: #检查HTTP返回状态码，200 indicates a successful request
         return response.json()
     else:
         return None
 
 # Gradio interface setup
-def mars_rover_photo_interface(sol,page):
+def mars_rover_photo_interface(sol,page,camera):
     """
     本函数主要调用API请求函数, 并处理API请求得到的JSON数据, 提取出图片的URL并返回
     
@@ -34,8 +35,8 @@ def mars_rover_photo_interface(sol,page):
     关于JSON: https://www.runoob.com/json/json-syntax.html
     """
     
-    api_key = "KKDMzTTxJzgLJBkaMqw0ZfMAyTBtLdKUmneFbPD8" # 请替换为你自己的API KEY
-    data = fetch_mars_rover_photos(api_key, sol=sol,page=page)
+    api_key = "VmLePQ9qA3ab3oxajX21K1EyjlWzp62qDSsc7SzO" # 我的API KEY
+    data = fetch_mars_rover_photos(api_key, sol=sol, page=page, camera=camera)
     print(data)
     if data:
         photos = data.get('photos', [])
@@ -51,5 +52,5 @@ page_input = gr.Number(label="Page", value=1)
 
 # Create the Gradio interface
 gr.Interface(fn=mars_rover_photo_interface, 
-        inputs=[sol_input,  page_input], 
-        outputs=gr.Gallery(label="Mars Rover Photos")).launch()
+inputs=[sol_input,  page_input, gr.Radio(["FHAZ", "RHAZ", "MAST", "CHEMCAM", "MAHLI", "MARDI", "NAVCAM", "PANCAM", "MINITES"])],
+        outputs=gr.Gallery(label="Mars Rover Photos")).launch(share=True)
