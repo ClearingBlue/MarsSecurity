@@ -7,24 +7,20 @@ import requests
 import gradio as gr
 
 # Function to fetch Mars Rover photos
-def fetch_mars_rover_photos(api_key, sol=1000, page=1, camera = None, earth_date = None):
+def fetch_mars_rover_photos(api_key, query_type, sol=1000, earth_date = None, page=1, camera = None):
     base_url = "https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos" #访问的网站API：Mars Rover Photos
     
-    if earth_date == None:
-        params = {
+    params = {
             'api_key': api_key,
-            'sol': sol,
             'page': page,
             'camera': camera,
         }
+    
+    if query_type == 'sol':
+        params['sol'] = sol
         #print(params)
-    else:
-        params = {
-            'api_key': api_key,
-            'earth_date': earth_date,
-            'page': page,
-            'camera': camera
-        }
+    elif query_type == 'earth_date':
+        params['earth_date'] = earth_date
         #print(params)
     
     response = requests.get(base_url, params=params) # 向API发送请求和参数
@@ -35,7 +31,7 @@ def fetch_mars_rover_photos(api_key, sol=1000, page=1, camera = None, earth_date
         return None
 
 # Gradio interface setup
-def mars_rover_photo_interface_sol(sol,page,camera):
+def mars_rover_photo_interface_sol(query_type,sol,earth_date,page,camera):
     """
     本函数主要调用API请求函数, 并处理API请求得到的JSON数据, 提取出图片的URL并返回
     
@@ -45,7 +41,7 @@ def mars_rover_photo_interface_sol(sol,page,camera):
     """
     
     api_key = "VmLePQ9qA3ab3oxajX21K1EyjlWzp62qDSsc7SzO" # 我的API KEY
-    data = fetch_mars_rover_photos(api_key, sol=sol, page=page, camera=camera)
+    data = fetch_mars_rover_photos(api_key, query_type, sol, earth_date,page, camera)
     #print(data)
     if data:
         photos = data.get('photos', [])
@@ -55,33 +51,18 @@ def mars_rover_photo_interface_sol(sol,page,camera):
     else:
         return []
     
-def mars_rover_photo_interface_date(earth_date,page,camera):
-    api_key = "VmLePQ9qA3ab3oxajX21K1EyjlWzp62qDSsc7SzO" # 我的API KEY
-
-    data = fetch_mars_rover_photos(api_key, earth_date=earth_date, page=page, camera=camera)
-    #print(data)
-    if data:
-        photos = data.get('photos', [])
-        photo_urls = [photo['img_src'] for photo in photos]
-        #print(photo_urls)
-        return photo_urls
-    else:
-        return []
 
 # Define the input components for the Gradio interface
+query_type_input = gr.Radio(label="Query Type", choices=["sol", "earth_date"], value='sol')
 sol_input= gr.Number(label="Martian Sol", value=1000)
 page_input = gr.Number(label="Page", value=1)
 earth_date_input = gr.DateTime(label="Earth Date")
+camera_input = gr.Dropdown(label = "Camera Type", choices = ["FHAZ", "RHAZ", "MAST", "CHEMCAM", "MAHLI", "MARDI", "NAVCAM", "PANCAM", "MINITES"], value=None)
 
 # Create the Gradio interface
-MartianSol = gr.Interface(fn=mars_rover_photo_interface_sol, 
-    inputs=[sol_input,  page_input, gr.Radio(["FHAZ", "RHAZ", "MAST", "CHEMCAM", "MAHLI", "MARDI", "NAVCAM", "PANCAM", "MINITES"])],
-        outputs=gr.Gallery(label="Mars Rover Photos"))
-EarthDate = gr.Interface(fn=mars_rover_photo_interface_date, 
-    inputs=[earth_date_input,  page_input, gr.Radio(["FHAZ", "RHAZ", "MAST", "CHEMCAM", "MAHLI", "MARDI", "NAVCAM", "PANCAM", "MINITES"])],
-        outputs=gr.Gallery(label="Mars Rover Photos"))
+gr.Interface(fn=mars_rover_photo_interface_sol, 
+    inputs=[query_type_input, sol_input,  earth_date_input, page_input, camera_input],
+        outputs=gr.Gallery(label="Mars Rover Photos")).launch()
 
-demo = gr.TabbedInterface([MartianSol, EarthDate], ["Martian Sol", "Earth Date"])
 
-if __name__ == "__main__":
-    demo.launch(share=True)
+
